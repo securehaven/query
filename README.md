@@ -16,10 +16,10 @@
 /users?select=id,firstName,lastName
 ```
 
-### Order
+### Sort
 
 ```
-/users?order=createdAt:desc,firstName:asc
+/users?sort=createdAt:desc,firstName:asc
 ```
 
 ### Filter

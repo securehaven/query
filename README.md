@@ -44,11 +44,13 @@ sort=<field>:<order>,...
 
 ### Filter
 
-Allowed filter values: `lt`, `gt`, `lte`, `gte`, `like`, `not`
+Allowed filter values: `eq`, `lt`, `gt`, `lte`, `gte`, `like`, `not`
 
 ```
 <field>=<value>&<field>=<filter>:<value>
 ```
+
+> `<field>=<value>` and `<field>=eq:<value>` behave the same
 
 **Example**
 

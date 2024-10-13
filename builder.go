@@ -13,24 +13,14 @@ func newBuilder(allowedFields []string) *builder {
 	}
 }
 
-func (b *builder) withLimit(limit int, base int, max int) *builder {
-	if limit <= 0 {
-		b.query.Limit = base
-	} else if limit > max {
-		b.query.Limit = max
-	} else {
-		b.query.Limit = limit
-	}
+func (b *builder) withLimit(limit int) *builder {
+	b.query.Limit = limit
 
 	return b
 }
 
-func (b *builder) withOffset(offset int, base int) *builder {
-	if offset < 0 {
-		b.query.Offset = base
-	} else {
-		b.query.Offset = offset
-	}
+func (b *builder) withOffset(offset int) *builder {
+	b.query.Offset = offset
 
 	return b
 }

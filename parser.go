@@ -19,23 +19,23 @@ var (
 )
 
 type Parser struct {
-	builder    *builder
-	maxLimit   int
-	baseLimit  int
-	baseOffset int
+	allowedFields []string
+	maxLimit      int
+	baseLimit     int
+	baseOffset    int
 }
 
 func NewParser(allowedFields []string) *Parser {
 	return &Parser{
-		builder:    newBuilder(allowedFields),
-		maxLimit:   DefaultMaxLimit,
-		baseLimit:  DefaultBaseLimit,
-		baseOffset: DefaultBaseOffset,
+		allowedFields: allowedFields,
+		maxLimit:      DefaultMaxLimit,
+		baseLimit:     DefaultBaseLimit,
+		baseOffset:    DefaultBaseOffset,
 	}
 }
 
 func (p *Parser) Parse(query url.Values) Query {
-	return p.builder.
+	return newBuilder(p.allowedFields).
 		withLimit(p.parseLimit(query.Get(ParamLimit))).
 		withOffset(p.parseOffset(query.Get(ParamOffset))).
 		get()

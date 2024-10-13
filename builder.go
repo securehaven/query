@@ -7,13 +7,13 @@ type builder struct {
 	allowedFields []string
 }
 
-func NewBuilder(allowedFields []string) *builder {
+func newBuilder(allowedFields []string) *builder {
 	return &builder{
 		allowedFields: allowedFields,
 	}
 }
 
-func (b *builder) WithLimit(limit int, base int, max int) *builder {
+func (b *builder) withLimit(limit int, base int, max int) *builder {
 	if limit <= 0 {
 		b.query.Limit = base
 	} else if limit > max {
@@ -25,7 +25,7 @@ func (b *builder) WithLimit(limit int, base int, max int) *builder {
 	return b
 }
 
-func (b *builder) WithOffset(offset int, base int) *builder {
+func (b *builder) withOffset(offset int, base int) *builder {
 	if offset < 0 {
 		b.query.Offset = base
 	} else {
@@ -35,7 +35,7 @@ func (b *builder) WithOffset(offset int, base int) *builder {
 	return b
 }
 
-func (b *builder) WithSelect(fields []string) *builder {
+func (b *builder) withSelect(fields []string) *builder {
 	for _, field := range fields {
 		if b.isAllowedField(field) {
 			b.query.Select = append(b.query.Select, field)
@@ -45,7 +45,7 @@ func (b *builder) WithSelect(fields []string) *builder {
 	return b
 }
 
-func (b *builder) WithSorting(sortings []Sorting) *builder {
+func (b *builder) withSorting(sortings []Sorting) *builder {
 	for _, sorting := range sortings {
 		if !b.isAllowedField(sorting.Field) {
 			continue
@@ -61,7 +61,7 @@ func (b *builder) WithSorting(sortings []Sorting) *builder {
 	return b
 }
 
-func (b *builder) WithFiltering(filterings []Filtering) *builder {
+func (b *builder) withFiltering(filterings []Filtering) *builder {
 	for _, filtering := range filterings {
 		if !b.isAllowedField(filtering.Field) {
 			continue
@@ -75,6 +75,10 @@ func (b *builder) WithFiltering(filterings []Filtering) *builder {
 	}
 
 	return b
+}
+
+func (b *builder) get() Query {
+	return b.query
 }
 
 func (b *builder) isAllowedField(field string) bool {

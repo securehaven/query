@@ -13,7 +13,7 @@ const (
 	FilterLessThanEquals   = "lte"
 	FilterGreateThanEquals = "gte"
 	FilterLike             = "like"
-	FilterNot              = "not"
+	FilterNotEquals        = "neq"
 )
 
 var (
@@ -24,6 +24,6 @@ var (
 		FilterLessThanEquals,
 		FilterGreateThanEquals,
 		FilterLike,
-		FilterNot,
+		FilterNotEquals,
 	}
 )

@@ -44,7 +44,7 @@ sort=<field>:<order>,...
 
 ### Filter
 
-Allowed filter values: `eq`, `lt`, `gt`, `lte`, `gte`, `like`, `not`
+Allowed filter values: `eq`, `lt`, `gt`, `lte`, `gte`, `like`, `neq`
 
 ```
 <field>=<value>&<field>=<filter>:<value>

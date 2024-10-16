@@ -3,7 +3,7 @@ package query
 type Filtering struct {
 	Field  string
 	Filter string
-	Value  any
+	Value  string
 }
 
 const (

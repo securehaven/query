@@ -17,6 +17,23 @@ var parser = query.NewParser(
 	},
 )
 
+func TestReadme(t *testing.T) {
+	parser := query.NewParser(
+		map[string]query.ParseFunc{
+			"id":         query.ParseInt(0, 0),
+			"first_name": query.ParseString,
+			"last_name":  query.ParseString,
+		},
+	)
+
+	queryValues, _ := url.ParseQuery("limit=10&offset=0&sort=id:asc&select=first_name,last_name&id=gt:1")
+	_, err := parser.Parse(queryValues)
+
+	if err != nil {
+		t.Errorf("failed to parse some value: %v", err)
+	}
+}
+
 func TestLimit(t *testing.T) {
 	values := make(url.Values, 0)
 

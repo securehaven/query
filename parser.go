@@ -39,13 +39,13 @@ func NewParser(allowedFields []string) *Parser {
 	}
 }
 
-func (p *Parser) Parse(query url.Values) Query {
+func (p *Parser) Parse(v url.Values) Query {
 	return Query{
-		Limit:      p.parseLimit(query.Get(ParamLimit)),
-		Offset:     p.parseOffset(query.Get(ParamOffset)),
-		Select:     p.parseSelect(query.Get(ParamSelect)),
-		Sortings:   p.parseSort(query.Get(ParamSort)),
-		Filterings: p.parseFilter(query),
+		Limit:      p.parseLimit(v.Get(ParamLimit)),
+		Offset:     p.parseOffset(v.Get(ParamOffset)),
+		Select:     p.parseSelect(v.Get(ParamSelect)),
+		Sortings:   p.parseSort(v.Get(ParamSort)),
+		Filterings: p.parseFilter(v),
 	}
 }
 
@@ -65,7 +65,7 @@ func (p *Parser) parseFilter(values url.Values) []Filtering {
 			filterings = append(filterings, Filtering{
 				Field:  field,
 				Filter: FilterEquals,
-				Value:  parts[0], // TODO: Parse into correct type
+				Value:  parts[0],
 			})
 			continue
 		}
@@ -128,21 +128,6 @@ func (p *Parser) parseSelect(raw string) []string {
 	})
 }
 
-func (p *Parser) splitClean(raw string, sep string, n int) []string {
-	rawParts := strings.SplitN(raw, sep, n)
-	parts := make([]string, 0, len(rawParts))
-
-	for _, rawPart := range rawParts {
-		part := strings.TrimSpace(rawPart)
-
-		if len(part) > 0 {
-			parts = append(parts, part)
-		}
-	}
-
-	return parts
-}
-
 func (p *Parser) parseLimit(raw string) int {
 	limit := p.parseInt(raw, p.baseLimit)
 
@@ -179,6 +164,21 @@ func (p *Parser) parseInt(raw string, fallback int) int {
 	}
 
 	return value
+}
+
+func (p *Parser) splitClean(raw string, sep string, n int) []string {
+	rawParts := strings.SplitN(raw, sep, n)
+	parts := make([]string, 0, len(rawParts))
+
+	for _, rawPart := range rawParts {
+		part := strings.TrimSpace(rawPart)
+
+		if len(part) > 0 {
+			parts = append(parts, part)
+		}
+	}
+
+	return parts
 }
 
 func (p *Parser) isAllowedField(field string) bool {

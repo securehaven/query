@@ -1,5 +1,7 @@
 package query
 
+import "slices"
+
 type Query[S any] struct {
 	Limit      int
 	Offset     int
@@ -13,12 +15,12 @@ type Query[S any] struct {
 func (q Query[S]) Filter(data S) map[string]any {
 	filteredFields := make(map[string]any, len(q.Select))
 
-	for _, name := range q.Select {
-		valueFunc, ok := q.fields[name]
-
-		if ok {
-			filteredFields[name] = valueFunc(data)
+	for name, valueFunc := range q.fields {
+		if len(q.Select) > 0 && !slices.Contains(q.Select, name) {
+			continue
 		}
+
+		filteredFields[name] = valueFunc(data)
 	}
 
 	return filteredFields

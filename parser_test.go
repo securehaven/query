@@ -1,8 +1,8 @@
 package query_test
 
 import (
-	"fmt"
 	"net/url"
+	"reflect"
 	"slices"
 	"strings"
 	"testing"
@@ -42,9 +42,14 @@ func TestReadme(t *testing.T) {
 		LastName:  "Doe",
 	})
 
-	fmt.Println(filtered)
-	// Raw: map[first_name:{John true} last_name:{Doe true}]
-	// JSON: {"first_name":"John","last_name":"Doe"}
+	expected := map[string]any{
+		"first_name": query.NewNull("John", true),
+		"last_name":  query.NewNull("Doe", true),
+	}
+
+	if !reflect.DeepEqual(filtered, expected) {
+		t.Errorf("unexpected filtered result: %v", filtered)
+	}
 }
 
 func TestLimit(t *testing.T) {
@@ -258,9 +263,8 @@ func TestSort(t *testing.T) {
 }
 
 func TestFilter(t *testing.T) {
-	values := make(url.Values, 0)
-
 	t.Run("field-only", func(t *testing.T) {
+		values := make(url.Values, 0)
 		values.Set("first_name", "Joe")
 
 		expected := []query.Filtering{
@@ -278,6 +282,7 @@ func TestFilter(t *testing.T) {
 	})
 
 	t.Run("single", func(t *testing.T) {
+		values := make(url.Values, 0)
 		values.Set("first_name", "neq:Joe")
 
 		expected := []query.Filtering{
@@ -295,12 +300,29 @@ func TestFilter(t *testing.T) {
 	})
 
 	t.Run("multiple", func(t *testing.T) {
+		values := make(url.Values, 0)
 		values.Set("id", "5")
 		values.Set("first_name", "neq:Joe")
 
 		expected := []query.Filtering{
 			{Field: "id", Filter: query.FilterEquals, Value: 5},
 			{Field: "first_name", Filter: query.FilterNotEquals, Value: "Joe"},
+		}
+		q, err := parser.Parse(values)
+
+		if err != nil {
+			t.Error(err)
+		}
+
+		if !slices.Equal(q.Filterings, expected) {
+			t.Errorf("unexpected filtering result: %+v", q.Filterings)
+		}
+	})
+
+	t.Run("like", func(t *testing.T) {
+		values, _ := url.ParseQuery("first_name=like:Jo%25")
+		expected := []query.Filtering{
+			{Field: "first_name", Filter: query.FilterLike, Value: "Jo%"},
 		}
 		q, err := parser.Parse(values)
 

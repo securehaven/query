@@ -64,6 +64,7 @@ func (p *Parser[S]) getQueryFields() map[string]ValueFunc[S] {
 
 func (p *Parser[S]) parseFilter(values url.Values) ([]Filtering, error) {
 	filterings := make([]Filtering, 0, len(p.fields))
+	parsingError := ParsingError{}
 
 	for _, field := range p.fields {
 		raw := values.Get(field.name)
@@ -76,10 +77,14 @@ func (p *Parser[S]) parseFilter(values url.Values) ([]Filtering, error) {
 		filtering, err := p.newFiltering(field.name, field.parseFunc, parts)
 
 		if err != nil {
-			return filterings, err
+			parsingError.Errors = append(parsingError.Errors, err)
 		}
 
 		filterings = append(filterings, filtering)
+	}
+
+	if len(parsingError.Errors) > 0 {
+		return filterings, parsingError
 	}
 
 	return filterings, nil

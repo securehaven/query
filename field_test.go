@@ -8,29 +8,61 @@ import (
 )
 
 func TestGetFieldsFromStruct(t *testing.T) {
-	type example struct {
-		Id        int
-		Age       int    `json:"-"`
-		UserName  string `json:""`
-		FirstName string `json:"firstName"`
-		LastName  string `json:"last_name"`
-	}
+	t.Run("simple", func(t *testing.T) {
+		type example struct {
+			Id        int
+			Age       int    `json:"-"`
+			UserName  string `json:""`
+			FirstName string `json:"firstName"`
+			LastName  string `json:"last_name"`
+		}
 
-	fields, err := getFieldsFromStruct[example]()
+		fields, err := getFieldsFromStruct[example]()
 
-	if !assert.NoError(t, err, "unexpected error") {
-		assert.ErrorIs(t, err, ErrNoStruct, "generic type must be a struct")
-	}
+		if !assert.NoError(t, err, "unexpected error") {
+			assert.ErrorIs(t, err, ErrNoStruct, "generic type must be a struct")
+		}
 
-	names := make([]string, len(fields))
+		names := make([]string, len(fields))
 
-	for i, field := range fields {
-		names[i] = field.name
-	}
+		for i, field := range fields {
+			names[i] = field.name
+		}
 
-	expected := []string{"Id", "UserName", "firstName", "last_name"}
+		expected := []string{"Id", "UserName", "firstName", "last_name"}
 
-	assert.ElementsMatch(t, expected, names, "unexpected result")
+		assert.ElementsMatch(t, expected, names, "unexpected result")
+	})
+
+	t.Run("complex", func(t *testing.T) {
+		type exampleUser struct {
+			Id        int    `json:"id"`
+			FirstName string `json:"first_name"`
+			LastName  string `json:"last_name"`
+		}
+
+		type examplePost struct {
+			Id     int         `json:"id"`
+			Title  string      `json:"title"`
+			Author exampleUser `json:"author"`
+		}
+
+		fields, err := getFieldsFromStruct[examplePost]()
+
+		if !assert.NoError(t, err, "unexpected error") {
+			assert.ErrorIs(t, err, ErrNoStruct, "generic type must be a struct")
+		}
+
+		names := make([]string, len(fields))
+
+		for i, field := range fields {
+			names[i] = field.name
+		}
+
+		expected := []string{"id", "title", "author", "author.id", "author.first_name", "author.last_name"}
+
+		assert.ElementsMatch(t, expected, names, "unexpected result")
+	})
 }
 
 func TestGetFieldNameFromStructField(t *testing.T) {

@@ -1,6 +1,7 @@
 package query
 
 import (
+	"log"
 	"net/url"
 	"slices"
 	"strconv"
@@ -19,50 +20,50 @@ var (
 	ParamSelect = "select"
 	ParamSort   = "sort"
 
-	SeparatorField  = ","
-	SeparatorFilter = ":"
+	SeparatorSelector = "."
+	SeparatorField    = ","
+	SeparatorFilter   = ":"
 )
 
-type Parser[S any] struct {
-	fields     []Field[S]
+type Parser struct {
+	fields     []field
 	maxLimit   int
 	baseLimit  int
 	baseOffset int
 }
 
-func NewParser[S any](fields ...Field[S]) *Parser[S] {
-	return &Parser[S]{
+func MustParser(p *Parser, err error) *Parser {
+	if err != nil {
+		log.Fatalf("could not create query parser: %v", err)
+	}
+
+	return p
+}
+
+func NewParser[T any]() (*Parser, error) {
+	fields, err := getFieldsFromStruct[T]()
+
+	return &Parser{
 		fields:     fields,
 		maxLimit:   DefaultMaxLimit,
 		baseLimit:  DefaultBaseLimit,
 		baseOffset: DefaultBaseOffset,
-	}
+	}, err
 }
 
-func (p *Parser[S]) Parse(v url.Values) (Query[S], error) {
+func (p *Parser) Parse(v url.Values, excludes ...string) (Query, error) {
 	filterings, err := p.parseFilter(v)
 
-	return Query[S]{
+	return Query{
 		Limit:      p.parseLimit(v.Get(ParamLimit)),
 		Offset:     p.parseOffset(v.Get(ParamOffset)),
 		Select:     p.parseSelect(v.Get(ParamSelect)),
 		Sortings:   p.parseSort(v.Get(ParamSort)),
 		Filterings: filterings,
-		fields:     p.getQueryFields(),
 	}, err
 }
 
-func (p *Parser[S]) getQueryFields() map[string]ValueFunc[S] {
-	queryFields := make(map[string]ValueFunc[S], len(p.fields))
-
-	for _, field := range p.fields {
-		queryFields[field.name] = field.valueFunc
-	}
-
-	return queryFields
-}
-
-func (p *Parser[S]) parseFilter(values url.Values) ([]Filtering, error) {
+func (p *Parser) parseFilter(values url.Values) ([]Filtering, error) {
 	filterings := make([]Filtering, 0, len(p.fields))
 	parsingError := ParsingError{}
 
@@ -90,7 +91,7 @@ func (p *Parser[S]) parseFilter(values url.Values) ([]Filtering, error) {
 	return filterings, nil
 }
 
-func (p *Parser[S]) newFiltering(field string, parse ParseFunc, parts []string) (Filtering, error) {
+func (p *Parser) newFiltering(field string, parse ParseFunc, parts []string) (Filtering, error) {
 	var err error
 
 	filtering := Filtering{
@@ -112,7 +113,7 @@ func (p *Parser[S]) newFiltering(field string, parse ParseFunc, parts []string) 
 	return filtering, err
 }
 
-func (p *Parser[S]) parseSort(raw string) []Sorting {
+func (p *Parser) parseSort(raw string) []Sorting {
 	rawParts := p.splitClean(raw, SeparatorField, -1)
 	sortings := make([]Sorting, 0, len(rawParts))
 
@@ -148,7 +149,7 @@ func (p *Parser[S]) parseSort(raw string) []Sorting {
 	return sortings
 }
 
-func (p *Parser[S]) parseSelect(raw string) []string {
+func (p *Parser) parseSelect(raw string) []string {
 	fields := p.splitClean(raw, SeparatorField, -1)
 
 	return slices.DeleteFunc(fields, func(field string) bool {
@@ -156,7 +157,7 @@ func (p *Parser[S]) parseSelect(raw string) []string {
 	})
 }
 
-func (p *Parser[S]) parseLimit(raw string) int {
+func (p *Parser) parseLimit(raw string) int {
 	limit := p.parseInt(raw, p.baseLimit)
 
 	if limit <= 0 {
@@ -170,7 +171,7 @@ func (p *Parser[S]) parseLimit(raw string) int {
 	return limit
 }
 
-func (p *Parser[S]) parseOffset(raw string) int {
+func (p *Parser) parseOffset(raw string) int {
 	offset := p.parseInt(raw, p.baseOffset)
 
 	if offset < 0 {
@@ -180,7 +181,7 @@ func (p *Parser[S]) parseOffset(raw string) int {
 	return offset
 }
 
-func (p *Parser[S]) parseInt(raw string, fallback int) int {
+func (p *Parser) parseInt(raw string, fallback int) int {
 	if len(raw) == 0 {
 		return fallback
 	}
@@ -194,7 +195,7 @@ func (p *Parser[S]) parseInt(raw string, fallback int) int {
 	return value
 }
 
-func (p *Parser[S]) splitClean(raw string, sep string, n int) []string {
+func (p *Parser) splitClean(raw string, sep string, n int) []string {
 	rawParts := strings.SplitN(raw, sep, n)
 	parts := make([]string, 0, len(rawParts))
 
@@ -209,33 +210,33 @@ func (p *Parser[S]) splitClean(raw string, sep string, n int) []string {
 	return parts
 }
 
-func (p *Parser[S]) isAllowedField(field string) bool {
-	return slices.ContainsFunc(p.fields, func(f Field[S]) bool {
-		return f.name == field
+func (p *Parser) isAllowedField(name string) bool {
+	return slices.ContainsFunc(p.fields, func(f field) bool {
+		return f.name == name
 	})
 }
 
-func (p *Parser[S]) isAllowedOrderValue(order string) bool {
+func (p *Parser) isAllowedOrderValue(order string) bool {
 	return slices.Contains(allowedOrderValues, order)
 }
 
-func (p *Parser[S]) isAllowedFilterValue(filter string) bool {
+func (p *Parser) isAllowedFilterValue(filter string) bool {
 	return slices.Contains(allowedFilterValues, filter)
 }
 
-func (p *Parser[S]) WithMaxLimit(max int) *Parser[S] {
+func (p *Parser) WithMaxLimit(max int) *Parser {
 	p.maxLimit = max
 
 	return p
 }
 
-func (p *Parser[S]) WithBaseLimit(base int) *Parser[S] {
+func (p *Parser) WithBaseLimit(base int) *Parser {
 	p.baseLimit = base
 
 	return p
 }
 
-func (p *Parser[S]) WithBaseOffset(base int) *Parser[S] {
+func (p *Parser) WithBaseOffset(base int) *Parser {
 	p.baseOffset = base
 
 	return p

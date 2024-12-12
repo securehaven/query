@@ -17,38 +17,30 @@ package main
 
 import ("github.com/securehaven/query")
 
-func main() {
-	parser := query.NewParser(
-		query.NewField("id", query.ParseInt(0, 0), func(d Data) any {
-			return query.NewNull(d.Id, d.Id > 0)
-		}),
-		query.NewField("first_name", query.ParseString, func(d Data) any {
-			return query.NewNull(d.FirstName, len(d.FirstName) > 0)
-		}),
-		query.NewField("last_name", query.ParseString, func(d Data) any {
-			return query.NewNull(d.LastName, len(d.LastName) > 0)
-		}),
-)
+type exampleUser struct {
+	Id        int    `json:"id"`
+	FirstName string `json:"first_name"`
+	LastName  string `json:"last_name"`
+}
 
-	queryValues, _ := url.ParseQuery("limit=10&offset=0&sort=id:asc&select=first_name,last_name&id=gt:1")
-	query, err := parser.Parse(queryValues)
+type examplePost struct {
+	Id     int         `json:"id"`
+	Title  string      `json:"title"`
+	Author exampleUser `json:"author"`
+}
+
+var parser = query.MustParser(query.NewParser[examplePost]())
+
+func main() {
+	queryValues, _ := url.ParseQuery("limit=10&offset=0&sort=id:asc&select=title,author.first_name,author.last_name&id=gt:1")
+	q, err := parser.Parse(queryValues)
 
 	if err != nil {
 		fmt.Printf("failed to parse some value: %v", err)
 	}
 
 	fmt.Printf("%+v", query)
-	// {Limit:10 Offset:0 Select:[first_name last_name] Sortings:[{Field:id Order:asc}] Filterings:[{Field:id Filter:gt Value:1}]}
-
-	filtered := q.Filter(Data{
-		Id:        3,
-		FirstName: "John",
-		LastName:  "Doe",
-	})
-
-	fmt.Println(filtered)
-	// Raw: map[first_name:{John true} last_name:{Doe true}]
-	// JSON: {"first_name":"John","last_name":"Doe"}
+	// {Limit:10 Offset:0 Select:[title author.first_name author.last_name] Sortings:[{Field:id Order:asc}] Filterings:[{Field:id Filter:gt Value:1}]}
 }
 ```
 

@@ -102,12 +102,15 @@ func getFieldsFromReflectStruct(st reflect.Type) ([]field, error) {
 			return nil, err
 		}
 
-		for _, child := range childFields {
-			child.name = name + SeparatorSelector + child.name
-		}
-
 		fields = append(fields, newField(name, structFieldType.Kind()))
-		fields = append(fields, childFields...)
+
+		for _, child := range childFields {
+			fields = append(fields, field{
+				name:      name + SeparatorSelector + child.name,
+				parseFunc: child.parseFunc,
+				valueFunc: child.valueFunc,
+			})
+		}
 	}
 
 	return fields, nil

@@ -1,7 +1,6 @@
 package query_test
 
 import (
-	"fmt"
 	"net/url"
 	"testing"
 
@@ -9,21 +8,27 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-type Data struct {
+type exampleUser struct {
 	Id        int    `json:"id"`
 	FirstName string `json:"first_name"`
 	LastName  string `json:"last_name"`
 }
 
-var parser = query.MustParser(query.NewParser[Data]())
+type examplePost struct {
+	Id     int         `json:"id"`
+	Title  string      `json:"title"`
+	Author exampleUser `json:"author"`
+}
+
+var parser = query.MustParser(query.NewParser[examplePost]())
 
 func TestReadme(t *testing.T) {
-	queryValues, _ := url.ParseQuery("limit=10&offset=0&sort=id:asc&select=first_name,last_name&id=gt:1")
+	queryValues, _ := url.ParseQuery("limit=10&offset=0&sort=id:asc&select=title,author.first_name,author.last_name&id=gt:1")
 	q, err := parser.Parse(queryValues)
 
 	assert.NoError(t, err, "should not return an error")
 
-	fmt.Printf("%+v", q)
+	// fmt.Printf("%+v", q)
 
 	_ = q
 
@@ -106,27 +111,27 @@ func TestSelect(t *testing.T) {
 		q, err := parser.Parse(values)
 
 		assert.NoError(t, err, "should not return an error")
-		assert.ElementsMatch(t, q.Select, expected, "selected fields should be equal")
+		assert.Equal(t, expected, q.Select, "selected fields should be equal")
 	})
 
 	t.Run("multiple", func(t *testing.T) {
-		values.Set(query.ParamSelect, "id,first_name,last_name")
+		values.Set(query.ParamSelect, "id,title,author.first_name,author.last_name")
 
-		expected := []string{"id", "first_name", "last_name"}
+		expected := []string{"id", "title", "author.first_name", "author.last_name"}
 		q, err := parser.Parse(values)
 
 		assert.NoError(t, err, "should not return an error")
-		assert.ElementsMatch(t, q.Select, expected, "selected fields should be equal")
+		assert.Equal(t, expected, q.Select, "selected fields should be equal")
 	})
 
 	t.Run("unknown-field", func(t *testing.T) {
-		values.Set(query.ParamSelect, "id,first_name,last_name,created_at")
+		values.Set(query.ParamSelect, "id,title,created_at")
 
-		expected := []string{"id", "first_name", "last_name"}
+		expected := []string{"id", "title"}
 		q, err := parser.Parse(values)
 
 		assert.NoError(t, err, "should not return an error")
-		assert.ElementsMatch(t, q.Select, expected, "selected fields should be equal")
+		assert.Equal(t, expected, q.Select, "selected fields should be equal")
 	})
 }
 
@@ -142,7 +147,7 @@ func TestSort(t *testing.T) {
 		q, err := parser.Parse(values)
 
 		assert.NoError(t, err, "should not return an error")
-		assert.ElementsMatch(t, q.Sortings, expected, "sortings should be equal")
+		assert.Equal(t, expected, q.Sortings, "sortings should be equal")
 	})
 
 	t.Run("single", func(t *testing.T) {
@@ -154,86 +159,86 @@ func TestSort(t *testing.T) {
 		q, err := parser.Parse(values)
 
 		assert.NoError(t, err, "should not return an error")
-		assert.ElementsMatch(t, q.Sortings, expected, "sortings should be equal")
+		assert.Equal(t, expected, q.Sortings, "sortings should be equal")
 	})
 
 	t.Run("multiple", func(t *testing.T) {
-		values.Set(query.ParamSort, "id:desc,first_name:asc_nulls_first")
+		values.Set(query.ParamSort, "id:desc,author.first_name:asc_nulls_first")
 
 		expected := []query.Sorting{
 			{Field: "id", Order: query.OrderDesc},
-			{Field: "first_name", Order: query.OrderAscNullsFirst},
+			{Field: "author.first_name", Order: query.OrderAscNullsFirst},
 		}
 		q, err := parser.Parse(values)
 
 		assert.NoError(t, err, "should not return an error")
-		assert.ElementsMatch(t, q.Sortings, expected, "sortings should be equal")
+		assert.Equal(t, expected, q.Sortings, "sortings should be equal")
 	})
 
 	t.Run("unknown-field", func(t *testing.T) {
-		values.Set(query.ParamSort, "id:desc,first_name:asc_nulls_first,created_at:desc_nulls_last")
+		values.Set(query.ParamSort, "id:desc,author.first_name:asc_nulls_first,created_at:desc_nulls_last")
 
 		expected := []query.Sorting{
 			{Field: "id", Order: query.OrderDesc},
-			{Field: "first_name", Order: query.OrderAscNullsFirst},
+			{Field: "author.first_name", Order: query.OrderAscNullsFirst},
 		}
 		q, err := parser.Parse(values)
 
 		assert.NoError(t, err, "should not return an error")
-		assert.ElementsMatch(t, q.Sortings, expected, "sortings should be equal")
+		assert.Equal(t, expected, q.Sortings, "sortings should be equal")
 	})
 }
 
 func TestFilter(t *testing.T) {
 	t.Run("field-only", func(t *testing.T) {
 		values := make(url.Values, 0)
-		values.Set("first_name", "Joe")
+		values.Set("author.first_name", "Joe")
 
 		expected := []query.Filtering{
-			{Field: "first_name", Filter: query.FilterEquals, Value: "Joe"},
+			{Field: "author.first_name", Filter: query.FilterEquals, Value: "Joe"},
 		}
 		q, err := parser.Parse(values)
 
 		assert.NoError(t, err, "should not return an error")
-		assert.ElementsMatch(t, q.Filterings, expected, "filterings should be equal")
+		assert.Equal(t, expected, q.Filterings, "filterings should be equal")
 	})
 
 	t.Run("single", func(t *testing.T) {
 		values := make(url.Values, 0)
-		values.Set("first_name", "neq:Joe")
+		values.Set("author.first_name", "neq:Joe")
 
 		expected := []query.Filtering{
-			{Field: "first_name", Filter: query.FilterNotEquals, Value: "Joe"},
+			{Field: "author.first_name", Filter: query.FilterNotEquals, Value: "Joe"},
 		}
 		q, err := parser.Parse(values)
 
 		assert.NoError(t, err, "should not return an error")
-		assert.ElementsMatch(t, q.Filterings, expected, "filterings should be equal")
+		assert.Equal(t, expected, q.Filterings, "filterings should be equal")
 	})
 
 	t.Run("multiple", func(t *testing.T) {
 		values := make(url.Values, 0)
 		values.Set("id", "5")
-		values.Set("first_name", "neq:Joe")
+		values.Set("author.first_name", "neq:Joe")
 
 		expected := []query.Filtering{
 			{Field: "id", Filter: query.FilterEquals, Value: 5},
-			{Field: "first_name", Filter: query.FilterNotEquals, Value: "Joe"},
+			{Field: "author.first_name", Filter: query.FilterNotEquals, Value: "Joe"},
 		}
 		q, err := parser.Parse(values)
 
 		assert.NoError(t, err, "should not return an error")
-		assert.ElementsMatch(t, q.Filterings, expected, "filterings should be equal")
+		assert.Equal(t, expected, q.Filterings, "filterings should be equal")
 	})
 
 	t.Run("like", func(t *testing.T) {
-		values, _ := url.ParseQuery("first_name=like:Jo%25")
+		values, _ := url.ParseQuery("author.first_name=like:Jo%25")
 		expected := []query.Filtering{
-			{Field: "first_name", Filter: query.FilterLike, Value: "Jo%"},
+			{Field: "author.first_name", Filter: query.FilterLike, Value: "Jo%"},
 		}
 		q, err := parser.Parse(values)
 
 		assert.NoError(t, err, "should not return an error")
-		assert.ElementsMatch(t, q.Filterings, expected, "filterings should be equal")
+		assert.Equal(t, expected, q.Filterings, "filterings should be equal")
 	})
 }

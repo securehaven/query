@@ -3,11 +3,10 @@ package query_test
 import (
 	"fmt"
 	"net/url"
-	"slices"
-	"strings"
 	"testing"
 
 	"github.com/securehaven/query"
+	"github.com/stretchr/testify/assert"
 )
 
 type Data struct {
@@ -22,9 +21,7 @@ func TestReadme(t *testing.T) {
 	queryValues, _ := url.ParseQuery("limit=10&offset=0&sort=id:asc&select=first_name,last_name&id=gt:1")
 	q, err := parser.Parse(queryValues)
 
-	if err != nil {
-		t.Errorf("failed to parse some value: %v", err)
-	}
+	assert.NoError(t, err, "should not return an error")
 
 	fmt.Printf("%+v", q)
 
@@ -54,13 +51,8 @@ func TestLimit(t *testing.T) {
 
 		q, err := parser.Parse(values)
 
-		if err != nil {
-			t.Error(err)
-		}
-
-		if q.Limit != 30 {
-			t.Errorf("%q received, expected limit to be %q", q.Limit, 30)
-		}
+		assert.NoError(t, err, "should not return an error")
+		assert.Equal(t, 30, q.Limit, "limit should be equal")
 	})
 
 	t.Run("fallback-min", func(t *testing.T) {
@@ -68,13 +60,8 @@ func TestLimit(t *testing.T) {
 
 		q, err := parser.Parse(values)
 
-		if err != nil {
-			t.Error(err)
-		}
-
-		if q.Limit != query.DefaultBaseLimit {
-			t.Errorf("%q received, expected limit to be %q", q.Limit, query.DefaultBaseLimit)
-		}
+		assert.NoError(t, err, "should not return an error")
+		assert.Equal(t, query.DefaultBaseLimit, q.Limit, "limit should be equal to DefaultBaseLimit")
 	})
 
 	t.Run("fallback-max", func(t *testing.T) {
@@ -82,13 +69,8 @@ func TestLimit(t *testing.T) {
 
 		q, err := parser.Parse(values)
 
-		if err != nil {
-			t.Error(err)
-		}
-
-		if q.Limit != query.DefaultMaxLimit {
-			t.Errorf("%q received, expected limit to be %q", q.Limit, query.DefaultMaxLimit)
-		}
+		assert.NoError(t, err, "should not return an error")
+		assert.Equal(t, query.DefaultMaxLimit, q.Limit, "limit should be equal to DefaultMaxLimit")
 	})
 }
 
@@ -100,13 +82,8 @@ func TestOffset(t *testing.T) {
 
 		q, err := parser.Parse(values)
 
-		if err != nil {
-			t.Error(err)
-		}
-
-		if q.Offset != 8 {
-			t.Errorf("%q received, expected offset to be %q", q.Offset, 8)
-		}
+		assert.NoError(t, err, "should not return an error")
+		assert.Equal(t, 8, q.Offset, "offset should be equal")
 	})
 
 	t.Run("fallback", func(t *testing.T) {
@@ -114,13 +91,8 @@ func TestOffset(t *testing.T) {
 
 		q, err := parser.Parse(values)
 
-		if err != nil {
-			t.Error(err)
-		}
-
-		if q.Offset != query.DefaultBaseOffset {
-			t.Errorf("%q received, expected offset to be %q", q.Offset, query.DefaultBaseOffset)
-		}
+		assert.NoError(t, err, "should not return an error")
+		assert.Equal(t, query.DefaultBaseOffset, q.Offset, "offset should be equal to DefaultBaseOffset")
 	})
 }
 
@@ -133,16 +105,8 @@ func TestSelect(t *testing.T) {
 		expected := []string{"id"}
 		q, err := parser.Parse(values)
 
-		if err != nil {
-			t.Error(err)
-		}
-
-		if !slices.Equal(q.Select, expected) {
-			t.Errorf("%q received, expected select to be %q",
-				strings.Join(q.Select, ","),
-				strings.Join(expected, ","),
-			)
-		}
+		assert.NoError(t, err, "should not return an error")
+		assert.ElementsMatch(t, q.Select, expected, "selected fields should be equal")
 	})
 
 	t.Run("multiple", func(t *testing.T) {
@@ -151,16 +115,8 @@ func TestSelect(t *testing.T) {
 		expected := []string{"id", "first_name", "last_name"}
 		q, err := parser.Parse(values)
 
-		if err != nil {
-			t.Error(err)
-		}
-
-		if !slices.Equal(q.Select, expected) {
-			t.Errorf("%q received, expected select to be %q",
-				strings.Join(q.Select, ","),
-				strings.Join(expected, ","),
-			)
-		}
+		assert.NoError(t, err, "should not return an error")
+		assert.ElementsMatch(t, q.Select, expected, "selected fields should be equal")
 	})
 
 	t.Run("unknown-field", func(t *testing.T) {
@@ -169,16 +125,8 @@ func TestSelect(t *testing.T) {
 		expected := []string{"id", "first_name", "last_name"}
 		q, err := parser.Parse(values)
 
-		if err != nil {
-			t.Error(err)
-		}
-
-		if !slices.Equal(q.Select, expected) {
-			t.Errorf("%q received, expected select to be %q",
-				strings.Join(q.Select, ","),
-				strings.Join(expected, ","),
-			)
-		}
+		assert.NoError(t, err, "should not return an error")
+		assert.ElementsMatch(t, q.Select, expected, "selected fields should be equal")
 	})
 }
 
@@ -193,13 +141,8 @@ func TestSort(t *testing.T) {
 		}
 		q, err := parser.Parse(values)
 
-		if err != nil {
-			t.Error(err)
-		}
-
-		if !slices.Equal(q.Sortings, expected) {
-			t.Errorf("unexpected sorting result: %+v", q.Sortings)
-		}
+		assert.NoError(t, err, "should not return an error")
+		assert.ElementsMatch(t, q.Sortings, expected, "sortings should be equal")
 	})
 
 	t.Run("single", func(t *testing.T) {
@@ -210,13 +153,8 @@ func TestSort(t *testing.T) {
 		}
 		q, err := parser.Parse(values)
 
-		if err != nil {
-			t.Error(err)
-		}
-
-		if !slices.Equal(q.Sortings, expected) {
-			t.Errorf("unexpected sorting result: %+v", q.Sortings)
-		}
+		assert.NoError(t, err, "should not return an error")
+		assert.ElementsMatch(t, q.Sortings, expected, "sortings should be equal")
 	})
 
 	t.Run("multiple", func(t *testing.T) {
@@ -228,13 +166,8 @@ func TestSort(t *testing.T) {
 		}
 		q, err := parser.Parse(values)
 
-		if err != nil {
-			t.Error(err)
-		}
-
-		if !slices.Equal(q.Sortings, expected) {
-			t.Errorf("unexpected sorting result: %+v", q.Sortings)
-		}
+		assert.NoError(t, err, "should not return an error")
+		assert.ElementsMatch(t, q.Sortings, expected, "sortings should be equal")
 	})
 
 	t.Run("unknown-field", func(t *testing.T) {
@@ -246,13 +179,8 @@ func TestSort(t *testing.T) {
 		}
 		q, err := parser.Parse(values)
 
-		if err != nil {
-			t.Error(err)
-		}
-
-		if !slices.Equal(q.Sortings, expected) {
-			t.Errorf("unexpected sorting result: %+v", q.Sortings)
-		}
+		assert.NoError(t, err, "should not return an error")
+		assert.ElementsMatch(t, q.Sortings, expected, "sortings should be equal")
 	})
 }
 
@@ -266,13 +194,8 @@ func TestFilter(t *testing.T) {
 		}
 		q, err := parser.Parse(values)
 
-		if err != nil {
-			t.Error(err)
-		}
-
-		if !slices.Equal(q.Filterings, expected) {
-			t.Errorf("unexpected filtering result: %+v", q.Filterings)
-		}
+		assert.NoError(t, err, "should not return an error")
+		assert.ElementsMatch(t, q.Filterings, expected, "filterings should be equal")
 	})
 
 	t.Run("single", func(t *testing.T) {
@@ -284,13 +207,8 @@ func TestFilter(t *testing.T) {
 		}
 		q, err := parser.Parse(values)
 
-		if err != nil {
-			t.Error(err)
-		}
-
-		if !slices.Equal(q.Filterings, expected) {
-			t.Errorf("unexpected filtering result: %+v", q.Filterings)
-		}
+		assert.NoError(t, err, "should not return an error")
+		assert.ElementsMatch(t, q.Filterings, expected, "filterings should be equal")
 	})
 
 	t.Run("multiple", func(t *testing.T) {
@@ -304,13 +222,8 @@ func TestFilter(t *testing.T) {
 		}
 		q, err := parser.Parse(values)
 
-		if err != nil {
-			t.Error(err)
-		}
-
-		if !slices.Equal(q.Filterings, expected) {
-			t.Errorf("unexpected filtering result: %+v", q.Filterings)
-		}
+		assert.NoError(t, err, "should not return an error")
+		assert.ElementsMatch(t, q.Filterings, expected, "filterings should be equal")
 	})
 
 	t.Run("like", func(t *testing.T) {
@@ -320,12 +233,7 @@ func TestFilter(t *testing.T) {
 		}
 		q, err := parser.Parse(values)
 
-		if err != nil {
-			t.Error(err)
-		}
-
-		if !slices.Equal(q.Filterings, expected) {
-			t.Errorf("unexpected filtering result: %+v", q.Filterings)
-		}
+		assert.NoError(t, err, "should not return an error")
+		assert.ElementsMatch(t, q.Filterings, expected, "filterings should be equal")
 	})
 }
